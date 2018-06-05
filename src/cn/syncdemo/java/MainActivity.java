@@ -3,10 +3,8 @@ package cn.syncdemo.java;
 import java.awt.EventQueue;
 
 import javax.swing.JFrame;
-import javax.swing.SpringLayout;
 import javax.swing.JLabel;
 import java.awt.Font;
-import java.awt.Graphics;
 
 import javax.swing.JButton;
 import java.awt.event.ActionListener;
@@ -14,26 +12,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.awt.event.ActionEvent;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JTextArea;
-import javax.swing.JProgressBar;
-import javax.swing.JTextPane;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
-import javax.swing.DropMode;
 import javax.swing.ImageIcon;
 
 import java.awt.Color;
-import javax.swing.JScrollBar;
-import javax.swing.JScrollPane;
 
 public class MainActivity{
 	private static MainActivity window;
 	private JFrame frame;
 	private JButton btn_start;
 	private JButton btn_stop;
-	private JTextArea textArea;
+	private JLabel totalLabel;
+	private JLabel sellLabel;
+	private JLabel totalNumLabel;
+	private JLabel sellFirstLabel;
+	private JLabel sellSecondLabel;
+	private JLabel sellThirdLabel;
 	
 	//运行三种状态 1-准备  2-进行中  3-暂停  4-结束
 	private static final int STATE_ALREADY = 1;
@@ -45,6 +38,11 @@ public class MainActivity{
 	private static final int FirstStation = 1;
 	private static final int SecondStation = 2;
 	private static final int ThirdStation = 3;
+	
+	//每个售票台售出票数
+	private int FirstSold = 0;
+	private int SecondSold = 0;
+	private int ThirdSold = 0;
 	
 	//窗口售票状态 1-准备  2-进行中  3-暂停  4-结束
 	private int window_state = STATE_ALREADY;
@@ -88,6 +86,8 @@ public class MainActivity{
 		
 		@Override
 		public void run() {
+			if(ticketNum() <= 0)
+				stopSale();
 			while(ticketNum() > 0){
 				//线程终止
 				if(Thread.interrupted())
@@ -99,12 +99,18 @@ public class MainActivity{
 						//判断哪个线程【售票窗口】在对车票进行操作
 						String stationName = Thread.currentThread().getName();
 						int station;
-						if(stationName.equals("1号售票窗口"))
+						if(stationName.equals("1号售票窗口")){
 							station = 1;
-						else if(stationName.equals("2号售票窗口"))
+							FirstSold++;
+						}
+						else if(stationName.equals("2号售票窗口")){
 							station = 2;
-						else
+							SecondSold++;
+						}
+						else{
 							station = 3;
+							ThirdSold++;
+						}
 						tickets.get(ticketNum()-1).setStation(station);
 						
 						//播放车票移动动画
@@ -116,9 +122,6 @@ public class MainActivity{
 							e.printStackTrace();
 						}
 						tickets.remove(tickets.size()-1);
-					}else{
-						stopSale();
-						break;
 					}
 				}
 			}
@@ -160,7 +163,6 @@ public class MainActivity{
 			public void actionPerformed(ActionEvent e) {
 				//点击停止售票
 				stopSale();
-				btn_stop.setVisible(false);
 			}
 		});
 	}
@@ -173,6 +175,10 @@ public class MainActivity{
 			ticketLabel = initLabel();
 			//初始化车票下落动画线程
 			ticketThread = initTicket();
+			//初始化窗口出票数
+			FirstSold = 0;
+			SecondSold = 0;
+			ThirdSold = 0;
 			//初始化窗口线程
 			TicketWindowThread twThread = new TicketWindowThread();
 			
@@ -186,7 +192,10 @@ public class MainActivity{
 			 
 			//置按钮为【暂停】
 			btn_start.setText("暂停售票");
+			btn_stop.setEnabled(true);
 			window_state = STATE_RUNNING;
+			//隐藏售票数frame
+			hideOverFrame();
 		}
 		
 		//暂停售票
@@ -210,15 +219,13 @@ public class MainActivity{
 				//置按钮为【继续】
 				btn_start.setText("继续售票");
 				window_state = STATE_PAUSE;
-				btn_stop.setVisible(true);
 			}
 			
 		}
 		
-		//继续售票
+		//点击继续售票
 		@SuppressWarnings("deprecation")
 		public void continueSale(){
-			btn_stop.setVisible(false);;
 			//恢复售票线程
 			t1.resume();
 			t2.resume();
@@ -234,8 +241,11 @@ public class MainActivity{
 			window_state = STATE_RUNNING;
 		}
 		
-		//结束售票
+		//点击结束售票
 		public void stopSale(){
+			//结束前调用pauseSale()暂停线程再结束
+			pauseSale();
+			
 			//结束售票进程
 			t1.interrupt();
 			t2.interrupt();
@@ -251,7 +261,10 @@ public class MainActivity{
 			}
 			
 			btn_start.setText("重新开始售票");
+			btn_stop.setEnabled(false);
 			window_state = STATE_ALREADY;
+			//显示售票数frame
+			showOverFrame();
 		}
 	
 	//车票移动动画效果
@@ -319,9 +332,10 @@ public class MainActivity{
 							}
 								
 							//到达后设置不可见
-							System.out.println("已清除" + index);
 							ticketLabel[index].setVisible(false);
 							frame.remove(ticketLabel[index]);
+							if(tickets.size() == 0)
+								stopSale();
 						}
 						
 					}
@@ -369,8 +383,9 @@ public class MainActivity{
 		frame.getContentPane().setBackground(Color.WHITE);
 		frame.setForeground(Color.WHITE);
 		frame.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-		frame.setTitle("功能选择界面");
+		frame.setTitle("模拟窗口售票流程界面");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.getContentPane().setLayout(null);
 		
 		JLabel bg = new JLabel();
 		ImageIcon background = new ImageIcon(getClass().getResource("background.png"));
@@ -380,17 +395,17 @@ public class MainActivity{
 		
 		JLabel title1 = new JLabel("一号窗口");
 		title1.setBounds(140,30,200,50);
-		title1.setFont(new Font("微软雅黑", Font.PLAIN, 18));
+		title1.setFont(new Font("幼圆", Font.PLAIN, 18));
 		frame.add(title1,0);
 
 		JLabel title2 = new JLabel("二号窗口");
 		title2.setBounds(440,30,200,50);
-		title2.setFont(new Font("微软雅黑", Font.PLAIN, 18));
+		title2.setFont(new Font("幼圆", Font.PLAIN, 18));
 		frame.add(title2,0);
 		
 		JLabel title3 = new JLabel("三号窗口");
 		title3.setBounds(740,30,200,50);
-		title3.setFont(new Font("微软雅黑", Font.PLAIN, 18));
+		title3.setFont(new Font("幼圆", Font.PLAIN, 18));
 		frame.add(title3,0);
 		
 		ImageIcon stationImg = new ImageIcon(getClass().getResource("station.png"));
@@ -416,9 +431,70 @@ public class MainActivity{
 		
 		btn_stop = new JButton("停止售票");
 		btn_stop.setFont(new Font("微软雅黑", Font.PLAIN, 15));
-		btn_stop.setVisible(false);
 		btn_stop.setBounds(550,700,140,30);
+		btn_stop.setEnabled(false);
 		frame.add(btn_stop,0);
-
+		
+		totalLabel = new JLabel();
+		ImageIcon totalImg = new ImageIcon(getClass().getResource("total.png"));
+		totalLabel.setIcon(totalImg);
+		totalLabel.setBounds(200,300,380,61);
+		frame.add(totalLabel,0);
+		
+		sellLabel = new JLabel();
+		ImageIcon sellImg = new ImageIcon(getClass().getResource("sell.png"));
+		sellLabel.setIcon(sellImg);
+		sellLabel.setBounds(350,400,400,200);
+		frame.add(sellLabel,0);
+		
+		totalNumLabel = new JLabel();
+		totalNumLabel.setFont(new Font("幼圆",Font.BOLD,40));
+		totalNumLabel.setForeground(Color.white);
+		totalNumLabel.setBounds(450,290,100,100);
+		frame.add(totalNumLabel,0);
+		
+		sellFirstLabel = new JLabel();
+		sellFirstLabel.setText("57");
+		sellFirstLabel.setFont(new Font("幼圆",Font.BOLD,40));
+		sellFirstLabel.setForeground(Color.white);
+		sellFirstLabel.setBounds(632,380,100,100);
+		frame.add(sellFirstLabel,0);
+		
+		sellSecondLabel = new JLabel();
+		sellSecondLabel.setFont(new Font("幼圆",Font.BOLD,40));
+		sellSecondLabel.setForeground(Color.white);
+		sellSecondLabel.setBounds(632,455,100,100);
+		frame.add(sellSecondLabel,0);
+		
+		sellThirdLabel = new JLabel();
+		sellThirdLabel.setFont(new Font("幼圆",Font.BOLD,40));
+		sellThirdLabel.setForeground(Color.white);
+		sellThirdLabel.setBounds(632,525,100,100);
+		frame.add(sellThirdLabel,0);
+		
+		hideOverFrame();
+	}
+	
+	private void showOverFrame(){
+		totalLabel.setVisible(true);
+		sellLabel.setVisible(true);
+		int total = FirstSold + SecondSold + ThirdSold;
+		totalNumLabel.setText(String.valueOf(total));
+		totalNumLabel.setVisible(true);
+		sellFirstLabel.setText(String.valueOf(FirstSold));
+		sellFirstLabel.setVisible(true);
+		sellSecondLabel.setText(String.valueOf(SecondSold));
+		sellSecondLabel.setVisible(true);
+		sellThirdLabel.setText(String.valueOf(ThirdSold));
+		sellThirdLabel.setVisible(true);
+	}
+	
+	private void hideOverFrame(){
+		totalLabel.setVisible(false);
+		sellLabel.setVisible(false);
+		totalNumLabel.setVisible(false);
+		sellFirstLabel.setVisible(false);
+		sellSecondLabel.setVisible(false);
+		sellThirdLabel.setVisible(false);
 	}
 }
