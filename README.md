@@ -3,8 +3,9 @@
 
 模拟火车窗口售票流程，Java/多线程/WindowBuilder，本意为老师微课做的演示程序，注释清楚适合新手学习了解多线程。
 
-## Installation
-
-1. install the java JDK6.
-2. clone this repo.
-3. run make.bat if on windows, make.sh if on linux, or compile it with netbeans.
+## 项目展示
+<img src="https://github.com/WithLei/TicketWindow/blob/master/screenshots/screenshots1.png" width="500" hegiht="500" align=left />
+<img src="https://github.com/WithLei/TicketWindow/blob/master/screenshots/screenshots2.png" width="500" hegiht="500" align=left />
+<img src="https://github.com/WithLei/TicketWindow/blob/master/screenshots/screenshots3.png" width="500" hegiht="500" align=left />
+<img src="https://github.com/WithLei/TicketWindow/blob/master/screenshots/screenshots4.png" width="500" hegiht="500" align=left />
+<img src="https://github.com/WithLei/TicketWindow/blob/master/screenshots/screenshots5.png" width="500" hegiht="500" align=left />
